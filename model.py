@@ -27,10 +27,15 @@ class ImageDataset(Dataset):
         '''
         image_path_ex = self.image_path_list[index]
         label_ex = image_path_ex.replace(self.data_dir, '')[0]
-        image_ex = io.imread(image_path_ex)
-        # Transform images into tensors
-        # !! Could experiment with normalizing the image tensors as well
-        image_ex = torch.tensor(image_ex, dtype=float)
+        # Load image and transform it into a tensor
+        image_ex = torch.tensor(io.imread(image_path_ex), dtype=float)
+        # !! IMAGE TENSOR NORMALIZATION
+        # Get mean and standard deviation of image tensor
+        mean = image_ex.mean()
+        std = image_ex.std()
+        # Normalize image around mean using standard deviation
+        transform_image = torchvision.transforms.Normalize(mean, std)
+        image_ex = transform_image(image_ex)
 
         return image_ex, label_ex
 
@@ -53,7 +58,7 @@ class ImageDataset(Dataset):
 dataset = ImageDataset()
 print(f'{len(dataset)} images in the dataset')
 
-# Splitting data into train, test, split
+# Splitting data into train, test, val splits
 # 1248, 156, 156 correspond to 80%, 10%, and 10% of the dataset respectively
 split_data = random_split(dataset, [1248, 156, 156], generator=torch.Generator().manual_seed(54))
 train_data = split_data[0]
