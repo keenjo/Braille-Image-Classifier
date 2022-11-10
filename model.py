@@ -29,13 +29,6 @@ class ImageDataset(Dataset):
         label_ex = image_path_ex.replace(self.data_dir, '')[0]
         # Load image and transform it into a tensor
         image_ex = torch.tensor(io.imread(image_path_ex), dtype=float)
-        # !! IMAGE TENSOR NORMALIZATION
-        # Get mean and standard deviation of image tensor
-        mean = image_ex.mean()
-        std = image_ex.std()
-        # Normalize image around mean using standard deviation
-        transform_image = torchvision.transforms.Normalize(mean, std)
-        image_ex = transform_image(image_ex)
 
         return image_ex, label_ex
 
