@@ -28,7 +28,9 @@ class ImageDataset(Dataset):
         image_path_ex = self.image_path_list[index]
         label_ex = image_path_ex.replace(self.data_dir, '')[0]
         # Load image and transform it into a tensor
-        image_ex = torch.tensor(io.imread(image_path_ex), dtype=float)
+        image_ex = io.imread(image_path_ex)
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+        image_ex = transform(image_ex)
 
         return image_ex, label_ex
 
