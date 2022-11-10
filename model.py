@@ -4,14 +4,12 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from skimage import io, transform
 import fnmatch
-
-
-data_dir = '.../Braille_Dataset/sorted_data/'
-
+import string
+from prep_data import prep_data
 
 class ImageDataset(Dataset):
 
-    def __init__(self, data_dir):
+    def __init__(self, data_dir="Braille Dataset/"):
         # Initialization of data directory and list of all of the paths to each image in the data
         self.data_dir = data_dir
         self.image_path_list = sorted(self._find_files(data_dir))
@@ -33,27 +31,32 @@ class ImageDataset(Dataset):
 
         return image_ex, label_ex
 
-    def _find_files(self, directory, pattern='*.jpg'):
+    def _find_files(self, directory):
         '''
         Function to get all files in data directory
         '''
         image_path_list = []
-        for root, dirnames, filenames in os.walk(directory):
-            for filename in fnmatch.filter(filenames, pattern):
-                image_path_list.append(os.path.join(root, filename))
+        sorted_dir = os.path.join(directory, "sorted_data")
+        if not os.path.isdir(sorted_dir):
+            print("Processing the data.")
+            prep_data(data_dir)
+        for letter in string.ascii_lowercase:
+            curr_dir = os.path.join(sorted_dir, letter)
+            image_path_list += [os.path.join(curr_dir, f) for f in os.listdir(curr_dir)]
         return image_path_list
 
+
 # Testing ImageDataset and Dataloader classes
-dataset = ImageDataset(data_dir)
-#print(f'{len(dataset)} images in the dataset')
+dataset = ImageDataset()
+print(f'{len(dataset)} images in the dataset')
 
 image_ex, label_ex = dataset[0]
-#print(f'Image shape: {image_ex.shape}')
+print(f'Image shape: {image_ex.shape}')
 
 batch_size = 5
-#print(f'Batch size: {batch_size}')
+print(f'Batch size: {batch_size}')
 image_dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 image_batch_data, image_batch_name = next(iter(image_dataloader))
-#print(f'Batch shape [batch_size, image_shape]: {image_batch_data.shape}')
-#print('Number of batches:', len(image_dataloader))
+print(f'Batch shape [batch_size, image_shape]: {image_batch_data.shape}')
+print('Number of batches:', len(image_dataloader))
