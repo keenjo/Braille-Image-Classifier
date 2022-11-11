@@ -2,11 +2,11 @@ import os
 import torch
 import torchvision
 from torch.utils.data import Dataset, DataLoader, random_split
-import numpy as np
 from skimage import io, transform
 import fnmatch
 import string
-from prep_data import prep_data
+from tqdm import tqdm
+from shutil import copyfile
 
 class ImageDataset(Dataset):
 
@@ -45,6 +45,20 @@ class ImageDataset(Dataset):
 
         return image_ex, label_ex
 
+    def prep_data(self, data_dir):
+        '''
+        Function to organize the letter images into one directory for each letter
+        - this function assumes the dataset was downloaded and unzipped in the same directory as the python scripts
+        '''
+        os.makedirs(f'{data_dir}/sorted_data/', exist_ok=True)  # Creates a sorted_data directory within Braille Dataset directory
+        for root, dirs, files in os.walk(f'{data_dir}/Braille Dataset'):
+            for file in tqdm(sorted(files)):
+                if file.endswith('.jpg'):
+                    os.makedirs(f'{data_dir}/sorted_data/{file[0]}/',
+                                exist_ok=True)  # Adds a directory for each letter of the alphabet
+                    copyfile(f'{root}/{file}',
+                             f'{data_dir}/sorted_data/{file[0]}/{file}')  # Adds each letter image to it's corresponding directory
+
     def _find_files(self, directory):
         '''
         Function to get all files in data directory
@@ -53,14 +67,19 @@ class ImageDataset(Dataset):
         sorted_dir = os.path.join(directory, "sorted_data")
         if not os.path.isdir(sorted_dir):
             print("Processing the data.")
-            prep_data(self.data_dir)
+            self.prep_data(self.data_dir)
         for letter in string.ascii_lowercase:
             curr_dir = os.path.join(sorted_dir, letter)
             image_path_list += [os.path.join(curr_dir, f) for f in os.listdir(curr_dir)]
         return image_path_list
 
 
-# Testing ImageDataset and Dataloader classes
+'''
+In practice we should probably just import the ImageDataset class into another file 
+so we can organize our data (using the code below) in the same file where the model will be built
+- The only reason I initially added the code below in this file was to make sure all of the functions 
+  above were working correctly with the DataLoader
+'''
 dataset = ImageDataset()
 print(f'{len(dataset)} images in the dataset')
 
