@@ -25,12 +25,23 @@ class ImageDataset(Dataset):
         '''
         Function to be able to select images and corresponding labels from the dataset
         '''
+        # Convert string labels to integers
+        labels = []
+        for path in self.image_path_list:
+            label = path.replace(self.data_dir + 'sorted_data/', '')[0]
+            labels.append(label)
+        labels = sorted(list(set(labels)))
+        labels2tensor = {label: labels.index(label) for label in labels}
+
         image_path_ex = self.image_path_list[index]
-        label_ex = image_path_ex.replace(self.data_dir, '')[0]
-        # Load image and transform it into a tensor
+        label_ex = image_path_ex.replace(self.data_dir + 'sorted_data/', '')[0]
+        # Load image and transform it into a tensor as a grayscale image (since the images don't contain any colors other than black, white, gray)
         image_ex = io.imread(image_path_ex)
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
+                                                    torchvision.transforms.Grayscale(num_output_channels=1)])
+        # Transform image and get label's corresponding integer
         image_ex = transform(image_ex)
+        label_ex = labels2tensor[label_ex]
 
         return image_ex, label_ex
 
@@ -56,13 +67,12 @@ print(f'{len(dataset)} images in the dataset')
 # Splitting data into train, test, val splits
 # 1248, 156, 156 correspond to 80%, 10%, and 10% of the dataset respectively
 split_data = random_split(dataset, [1248, 156, 156], generator=torch.Generator().manual_seed(54))
-train_data = split_data[0]
-test_data = split_data[1]
-val_data = split_data[2]
+train_data, val_data, test_data = split_data
 
 # Example of a training image
 train_image_ex, train_label_ex = train_data[0]
 print(f'Image shape: {train_image_ex.shape}')
+print(f'Label: {train_label_ex}')
 
 # Creating the train, test, and val dataloaders
 batch_size = 5
