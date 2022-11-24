@@ -2,6 +2,7 @@ import os
 import torch
 import torchvision
 from torch.utils.data import Dataset, DataLoader, random_split
+import numpy as np
 from skimage import io, transform
 import fnmatch
 import string
@@ -37,6 +38,8 @@ class ImageDataset(Dataset):
         label_ex = image_path_ex.replace(self.data_dir + 'sorted_data/', '')[0]
         # Load image and transform it into a tensor as a grayscale image (since the images don't contain any colors other than black, white, gray)
         image_ex = io.imread(image_path_ex)
+        # Normalize image (make values between 0 and 1)
+        image_ex = image_ex / np.max(image_ex)
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
                                                     torchvision.transforms.Grayscale(num_output_channels=1)])
         # Transform image and get label's corresponding integer
