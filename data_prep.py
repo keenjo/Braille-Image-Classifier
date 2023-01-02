@@ -41,6 +41,7 @@ class ImageDataset(Dataset):
         # Normalize image (make values between 0 and 1)
         image_ex = image_ex / np.max(image_ex)
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor(),
+                                                    torchvision.transforms.ConvertImageDtype(dtype=torch.float32),
                                                     torchvision.transforms.Grayscale(num_output_channels=1)])
         # Transform image and get label's corresponding integer
         image_ex = transform(image_ex)
