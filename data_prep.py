@@ -82,7 +82,7 @@ In practice we should probably just import the ImageDataset class into another f
 so we can organize our data (using the code below) in the same file where the model will be built
 - The only reason I initially added the code below in this file was to make sure all of the functions 
   above were working correctly with the DataLoader
-'''
+
 dataset = ImageDataset()
 print(f'{len(dataset)} images in the dataset')
 
@@ -95,6 +95,7 @@ train_data, val_data, test_data = split_data
 train_image_ex, train_label_ex = train_data[0]
 print(f'Image shape: {train_image_ex.shape}')
 print(f'Label: {train_label_ex}')
+print(train_image_ex)
 
 # Creating the train, test, and val dataloaders
 batch_size = 5
@@ -107,3 +108,4 @@ val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
 train_batch_data, train_batch_name = next(iter(train_dataloader))
 print(f'Batch shape [batch_size, image_shape]: {train_batch_data.shape}')
 print('Number of batches:', len(train_dataloader))
+'''
