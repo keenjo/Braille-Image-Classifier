@@ -17,11 +17,14 @@ ex.observers.append(FileStorageObserver('runs'))
 @ex.config
 def config():
     """Configuration of the Braille Image Classifier experiment."""
-    seed = 54
+    seed = 0
     batch_size = 8
     num_epochs = 30
     loss_fn = nn.CrossEntropyLoss()
     learning_rate = 0.01
+    num_channels1 = 16
+    num_channels2 = 32
+    num_channels3 = 64
 
 
 @ex.capture
@@ -76,7 +79,7 @@ def eval_cnn_classifier(model, eval_dataloader):
 
 
 @ex.automain
-def run(seed, batch_size, num_epochs, loss_fn, learning_rate):
+def run(seed, batch_size, num_epochs, loss_fn, learning_rate, num_channels1, num_channels2, num_channels3):
     # Instantiating the dataset
     dataset = ImageDataset()
     # Splitting the dataset
@@ -94,7 +97,9 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate):
     print('Number of batches:', len(train_dataloader))
 
     print("== Initializing model...")
-    model = CNNClassif(16, 32, 64, num_classes)
+    model = CNNClassif(num_channels1, num_channels2, num_channels3, num_classes)
+    torch.manual_seed(seed)
+    model.apply(init_weights)
     num_params = sum(p.numel() for p in model.parameters())
     ex.log_scalar('number_of_params', num_params)
     print(model)
