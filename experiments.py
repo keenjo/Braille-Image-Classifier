@@ -20,12 +20,12 @@ def config():
     seed = 54
     batch_size = 8
     num_epochs = 30
-    loss_fn=nn.CrossEntropyLoss()
+    loss_fn = nn.CrossEntropyLoss()
     learning_rate = 0.01
 
 
 @ex.capture
-def training_cnn_classifier(model, train_dataloader, num_epochs, loss_fn, learning_rate, verbose=True):
+def training_cnn_classifier(model, train_dataloader, val_dataloader, num_epochs, loss_fn, learning_rate, verbose=True):
     model_tr = copy.deepcopy(model)
     model_tr.train()
     
@@ -48,8 +48,10 @@ def training_cnn_classifier(model, train_dataloader, num_epochs, loss_fn, learni
             loss_current_epoch += loss.item()
 
         loss_all_epochs.append(loss_current_epoch / (batch_index + 1))
+        val_accuracy = eval_cnn_classifier(model_tr, eval_dataloader=val_dataloader)
         if verbose:
             print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss_current_epoch/(batch_index + 1):.4f}')
+            print(f'-----> Validation Accuracy: {val_accuracy:.3f}%')
             ex.log_scalar('loss', loss_current_epoch, step=epoch+1)
         
     return model_tr, loss_all_epochs
@@ -85,7 +87,7 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate):
     test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
     val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True)
 
-    num_classes = len(list(set([x[1] for x in train_dataloader]))) 
+    num_classes = len(list(set([datapoint[1] for datapoint in train_data])))
     print("Number of classes: ", num_classes)
     batch_data, batch_name =  next(iter(train_dataloader))
     print(f'Batch shape [batch_size, image_shape]: {batch_data.shape}')
@@ -98,7 +100,7 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate):
     print(model)
 
     print("== Training...")
-    model, loss_total = training_cnn_classifier(model, train_dataloader)
+    model, loss_total = training_cnn_classifier(model, train_dataloader, val_dataloader)
     torch.save(model.state_dict(), 'test_model.pt')
     ex.add_artifact('test_model.pt')
 
@@ -110,4 +112,4 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate):
     print("== Evaluating...")
     accuracy = eval_cnn_classifier(model, test_dataloader)
     ex.log_scalar('accuracy', accuracy)
-    return round(accuracy, 2)
+    return f'{round(accuracy, 2)}%'
