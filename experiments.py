@@ -19,22 +19,27 @@ def config():
     """Configuration of the Braille Image Classifier experiment."""
     seed = 0
     batch_size = 8
-    num_epochs = 30
+    num_epochs = 50
     loss_fn = nn.CrossEntropyLoss()
     learning_rate = 0.01
-    num_channels1 = 16
-    num_channels2 = 32
-    num_channels3 = 64
+    patience = 10
+    num_channels1 = 32
+    num_channels2 = 64
+    num_channels3 = 128
+    num_lin_channels1 = 128
+    num_lin_channels2 = 64
 
 
 @ex.capture
-def training_cnn_classifier(model, train_dataloader, val_dataloader, num_epochs, loss_fn, learning_rate, verbose=True):
+def training_cnn_classifier(model, train_dataloader, val_dataloader, num_epochs, loss_fn,
+                            learning_rate, patience, verbose=True):
     model_tr = copy.deepcopy(model)
     model_tr.train()
     
     optimizer = torch.optim.SGD(model_tr.parameters(), lr=learning_rate)
     
     loss_all_epochs = []
+    no_improve = 0  # value to track for how many epochs validation accuracy is not improving
     
     for epoch in range(num_epochs):
         loss_current_epoch = 0
@@ -52,10 +57,22 @@ def training_cnn_classifier(model, train_dataloader, val_dataloader, num_epochs,
 
         loss_all_epochs.append(loss_current_epoch / (batch_index + 1))
         val_accuracy = eval_cnn_classifier(model_tr, eval_dataloader=val_dataloader)
+        # Early stopping implementation
+        if epoch == 0:
+            best_acc = val_accuracy
+        elif val_accuracy > best_acc:
+            best_acc = val_accuracy
+            torch.save(model_tr.state_dict(), 'test_model.pt')
+            no_improve = 0
+        else:
+            no_improve += 1
         if verbose:
             print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss_current_epoch/(batch_index + 1):.4f}')
             print(f'-----> Validation Accuracy: {val_accuracy:.3f}%')
             ex.log_scalar('loss', loss_current_epoch, step=epoch+1)
+
+        if no_improve >= patience:
+            break
         
     return model_tr, loss_all_epochs
 
@@ -79,7 +96,10 @@ def eval_cnn_classifier(model, eval_dataloader):
 
 
 @ex.automain
-def run(seed, batch_size, num_epochs, loss_fn, learning_rate, num_channels1, num_channels2, num_channels3):
+def run(seed, batch_size, num_epochs,
+        num_channels1, num_channels2, num_channels3,
+        num_lin_channels1, num_lin_channels2):
+
     # Instantiating the dataset
     dataset = ImageDataset()
     # Splitting the dataset
@@ -97,7 +117,8 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate, num_channels1, num
     print('Number of batches:', len(train_dataloader))
 
     print("== Initializing model...")
-    model = CNNClassif(num_channels1, num_channels2, num_channels3, num_classes)
+    model = CNNClassif(num_channels1, num_channels2, num_channels3,
+                       num_lin_channels1, num_lin_channels2, num_classes)
     torch.manual_seed(seed)
     model.apply(init_weights)
     num_params = sum(p.numel() for p in model.parameters())
@@ -106,15 +127,20 @@ def run(seed, batch_size, num_epochs, loss_fn, learning_rate, num_channels1, num
 
     print("== Training...")
     model, loss_total = training_cnn_classifier(model, train_dataloader, val_dataloader)
-    torch.save(model.state_dict(), 'test_model.pt')
+    # Best model is saved within training function
+    # torch.save(model.state_dict(), 'test_model.pt')
     ex.add_artifact('test_model.pt')
 
     # TO DO: make it prettier
-    plt.plot(list(range(num_epochs)), loss_total)
+    plt.plot(loss_total)
     plt.savefig('loss.png')
     ex.add_artifact('loss.png')
 
     print("== Evaluating...")
-    accuracy = eval_cnn_classifier(model, test_dataloader)
+    # Instantiating our model and loading the best model checkpoint from training
+    model_eval = CNNClassif(num_channels1, num_channels2, num_channels3,
+                            num_lin_channels1, num_lin_channels2, num_classes)
+    model_eval.load_state_dict(torch.load('test_model.pt'))
+    accuracy = eval_cnn_classifier(model_eval, test_dataloader)
     ex.log_scalar('accuracy', accuracy)
-    return f'{round(accuracy, 2)}%'
+    return f'{accuracy:.3f}%'
