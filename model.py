@@ -1,10 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision import transforms, datasets
-from torch.utils.data import DataLoader, Subset, random_split
-import numpy as np
-import matplotlib.pyplot as plt
-import copy
+
 
 class CNNClassif(nn.Module):
     """Convolutional neural network classifier for Braille letter images"""
@@ -21,19 +17,19 @@ class CNNClassif(nn.Module):
         # Number of classes
         self.num_classes = num_classes
 
-        self.cnn_layer1 = nn.Sequential(nn.Conv2d(3, num_channels1, kernel_size=5, padding=2), 
+        self.cnn_layer1 = nn.Sequential(nn.Conv2d(3, num_channels1, kernel_size=5, padding=2),
                                    nn.ReLU(),
                                    nn.MaxPool2d(kernel_size=2))
-        self.cnn_layer2 = nn.Sequential(nn.Conv2d(num_channels1, num_channels2, kernel_size=5, padding=2), 
+        self.cnn_layer2 = nn.Sequential(nn.Conv2d(num_channels1, num_channels2, kernel_size=5, padding=2),
                                    nn.ReLU(),
                                    nn.MaxPool2d(kernel_size=2))
-        self.cnn_layer3 = nn.Sequential(nn.Conv2d(num_channels2, num_channels3, kernel_size=3, padding=2), 
+        self.cnn_layer3 = nn.Sequential(nn.Conv2d(num_channels2, num_channels3, kernel_size=3, padding=2),
                                    nn.ReLU(),
                                    nn.MaxPool2d(kernel_size=2))
         self.linear_layer1 = nn.Sequential(nn.Linear(num_channels3*4*4, num_lin_channels1), nn.ReLU())
         self.linear_layer2 = nn.Sequential(nn.Linear(num_lin_channels1, num_lin_channels2), nn.ReLU())
         self.linear_layer3 = nn.Sequential(nn.Linear(num_lin_channels2, num_classes), nn.ReLU())
-        
+
     def forward(self, x):
         w = self.cnn_layer1(x)
         y = self.cnn_layer2(w)
@@ -43,7 +39,8 @@ class CNNClassif(nn.Module):
         lin1 = self.linear_layer1(z2)
         lin2 = self.linear_layer2(lin1)
         out = self.linear_layer3(lin2)
-        return out 
+        return out
+
 
 def init_weights(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
